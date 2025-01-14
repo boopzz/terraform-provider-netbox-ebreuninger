@@ -34,6 +34,11 @@ func dataSourceNetboxTenant() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"comments": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			customFieldsKey: customFieldsSchema,
 		},
 	}
 }
@@ -69,8 +74,15 @@ func dataSourceNetboxTenantRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("name", result.Name)
 	d.Set("slug", result.Slug)
 	d.Set("description", result.Description)
+	d.Set("comments", result.Comments)
 	if result.Group != nil {
 		d.Set("group_id", result.Group.ID)
 	}
+
+	cf := getCustomFields(result.CustomFields)
+	if cf != nil {
+		d.Set(customFieldsKey, cf)
+	}
+
 	return nil
 }
