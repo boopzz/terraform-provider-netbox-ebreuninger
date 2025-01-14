@@ -46,6 +46,21 @@ resource "netbox_tenant" "test" {
 				),
 			},
 			{
+				Config: fmt.Sprintf(`
+resource "netbox_tenant" "test_comments" {
+  name = "%s"
+  slug = "%s"
+  description = "%s"
+  comments = "%s"
+}`, testName, randomSlug, testDescription, testComments),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("netbox_tenant.test", "name", testName),
+					resource.TestCheckResourceAttr("netbox_tenant.test", "slug", randomSlug),
+					resource.TestCheckResourceAttr("netbox_tenant.test", "description", testDescription),
+					resource.TestCheckResourceAttr("netbox_tenant.test", "comments", testComments),
+				),
+			},
+			{
 				ResourceName:      "netbox_tenant.test",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -113,6 +128,45 @@ resource "netbox_tenant" "test_tags" {
 }`, testName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("netbox_tenant.test_tags", "tags.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNetboxTenant_customFields(t *testing.T) {
+	testSlug := "tenant-customFields"
+	testName := testAccGetTestName(testSlug)
+	resource.ParallelTest(t, resource.TestCase{
+		Providers: testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNetboxTenantTagDependencies(testName) + fmt.Sprintf(`
+resource "netbox_tenant" "test_customFields" {
+  name = "%[1]s"
+
+  custom_fields = {
+    "%[1]s" = "test-field"
+  }}`, testName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("netbox_tenant.test_customFields", "name", testName),
+					resource.TestCheckResourceAttr("netbox_tenant.test_customFields", fmt.Sprintf("custom_fields.%s", testName), "test-field"),
+				),
+			},
+			{
+				Config: testAccNetboxTenantTagDependencies(testName) + fmt.Sprintf(`
+resource "netbox_tenant" "test_customFields" {
+  name = "%[1]s"
+
+  custom_fields = {
+    "%[1]sa" = "test-field a"
+    "%[1]sb" = "test-field b"
+  }}`, testName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("netbox_tenant.test_customFields", "name", testName),
+					resource.TestCheckResourceAttr("netbox_tenant.test_customFields", fmt.Sprintf("custom_fields.%s", testName+"a"), "test-field a"),
+					resource.TestCheckResourceAttr("netbox_tenant.test_customFields", fmt.Sprintf("custom_fields.%s", testName+"b"), "test-field b"),
 				),
 			},
 		},
