@@ -34,7 +34,6 @@ func resourceNetboxTenant() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(1, 100),
 			},
-			tagsKey: tagsSchema,
 			"group_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -43,6 +42,12 @@ func resourceNetboxTenant() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"comments": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			customFieldsKey: customFieldsSchema,
+			tagsKey: tagsSchema,
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -73,10 +78,16 @@ func resourceNetboxTenantCreate(d *schema.ResourceData, m interface{}) error {
 	data.Name = &name
 	data.Slug = &slug
 	data.Description = description
+	data.Comments = comments
 	data.Tags = tags
 
 	if groupID != 0 {
 		data.Group = &groupID
+	}
+
+	cf, ok := d.GetOk(customFieldsKey)
+	if ok {
+		data.CustomFields = cf
 	}
 
 	params := tenancy.NewTenancyTenantsCreateParams().WithData(data)
@@ -112,9 +123,17 @@ func resourceNetboxTenantRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("name", res.GetPayload().Name)
 	d.Set("slug", res.GetPayload().Slug)
 	d.Set("description", res.GetPayload().Description)
+	d.Set("comments", res.GetPayload().Comments)
 	if res.GetPayload().Group != nil {
 		d.Set("group_id", res.GetPayload().Group.ID)
 	}
+
+	cf := getCustomFields(res.GetPayload().CustomFields)
+	if cf != nil {
+		d.Set(customFieldsKey, cf)
+	}
+
+	d.Set(tagsKey, getTagListFromNestedTagList(res.GetPayload().Tags))
 
 	return nil
 }
@@ -142,9 +161,14 @@ func resourceNetboxTenantUpdate(d *schema.ResourceData, m interface{}) error {
 	data.Slug = &slug
 	data.Name = &name
 	data.Description = description
+	data.Comments = comments
 	data.Tags = tags
 	if groupID != 0 {
 		data.Group = &groupID
+	}
+
+	if cf, ok := d.GetOk(customFieldsKey); ok {
+		data.CustomFields = cf
 	}
 
 	params := tenancy.NewTenancyTenantsPartialUpdateParams().WithID(id).WithData(&data)
