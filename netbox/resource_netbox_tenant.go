@@ -61,6 +61,7 @@ func resourceNetboxTenantCreate(d *schema.ResourceData, m interface{}) error {
 	name := d.Get("name").(string)
 	groupID := int64(d.Get("group_id").(int))
 	description := d.Get("description").(string)
+	comments := d.Get("comments").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
@@ -146,6 +147,7 @@ func resourceNetboxTenantUpdate(d *schema.ResourceData, m interface{}) error {
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
+	comments := d.Get("comments").(string)
 	groupID := int64(d.Get("group_id").(int))
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
