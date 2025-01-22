@@ -42,4 +42,5 @@ resource "netbox_tenant" "customer_a" {
 
 - `id` (String) The ID of this resource.
 
+# TODO add docs
 
